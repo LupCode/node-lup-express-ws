@@ -1,0 +1,39 @@
+name: On Push
+on: [push]
+jobs:
+  build:
+    name: Building
+    runs-on: Linux
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v3
+      - name: "Setup Node"
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - name: Installing 
+        run: npm install -save --save-dev
+      - name: Building
+        run: npm run build
+      - name: Done
+        run: exit 0
+  
+  testing:
+    name: Testing
+    needs: build
+    runs-on: Linux
+    steps:
+      - name: "Setup Node"
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      - name: Installing 
+        run: npm install -save --save-dev
+      - name: Running linter
+        run: npm run lint
+      - name: Running tests
+        run:  npm run test
+      - name: Done
+        run: exit 0
