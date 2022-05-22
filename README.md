@@ -33,7 +33,7 @@ app.use(router);
 ```
 
 ### TypeScript
-```javascript
+```typescript
 import express from 'express';
 import expressWs from 'lup-express-ws';
 
