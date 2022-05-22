@@ -83,7 +83,7 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
   } as expressWs.Instance;
 
   addWsHandler(appWs, app);
-  if (!options.leaveRouterUntouched){
+  if (!options.leaveRouterUntouched) {
     addWsHandler(appWs, express.Router);
     express.Router.prototype.ws = (route: core.PathParams, ...middlewares: expressWs.WebsocketRequestHandler[]) => {
       const routeStr = route.toString();
@@ -93,12 +93,12 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
     };
   }
 
-  server.on('upgrade', (req: http.IncomingMessage, socket: internal.Duplex, head: Buffer) => {
+  server.on('upgrade', (req: http.IncomingMessage, duplex: internal.Duplex, head: Buffer) => {
     const path = getPathFromUrl(req.url);
     if (path) {
       const middlewares = routes.get(path);
       if (!middlewares) return;
-      wss.handleUpgrade(req, socket, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
+      wss.handleUpgrade(req, duplex, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
         wss.emit('connection', socket, request);
 
         let i = 0;
@@ -111,6 +111,6 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
   });
 
   return appWs;
-}
+};
 
 export default expressWs;
