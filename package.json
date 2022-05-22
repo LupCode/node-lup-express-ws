@@ -1,6 +1,6 @@
 {
   "name": "lup-express-ws",
-  "version": "0.1.20",
+  "version": "1.0.0",
   "description": "WebSocket server for express while being compatible with other websocket servers like webpack-hot-client or next.js",
   "files": [
     "lib/**/*"

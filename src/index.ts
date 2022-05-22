@@ -58,29 +58,8 @@ const addWsHandler = <T extends expressWs.RouterLike>(app: expressWs.Instance, t
     const specialGetUrl = toWebsocketPath(route.toString(), false);
 
     this.get(specialGetUrl, (req: express.Request, res: express.Response, next: express.NextFunction) => {
-
-      console.log("Get got called with ws="+(req as any).ws); // TODO REMOVE
-
-      let i = -1;
-      function handleNext(){
-        if(++i < middlewares.length){
-          console.log("handle next "+i+" --> "+middlewares[i]); // TODO REMOVE
-          middlewares[i]((req as any).ws as ws.WebSocket, req, handleNext);
-        } else next();
-      }
-
-
-      if((req as any).ws){
-        // call middlewares
-        console.log("Call middlewares for "+req.url);
-        handleNext();
-
-      } else {
-        // signal that handler exists
-        console.log("Signal handler exists for "+req.url);
-        (req as any).wsHandled = true;
-        next();
-      }
+      if((req as any).wsHandlers) middlewares.forEach((middleware) => (req as any).wsHandlers.push(middleware));
+      next();
     });
 
     return target as T;
@@ -109,17 +88,10 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
   }
 
 
+  // handle upgrades from simple HTTP request to Websocket
   server.on('upgrade', (req: http.IncomingMessage, duplex: internal.Duplex, head: Buffer) => {
-
-    console.log("UPGRADE: "+req.url);
-
     req.url = toWebsocketPath(req.url, true) || req.url; // TODO add /.websocket at end (append query ? if set)
-
-    const reqCopy = {
-      ...req
-    } as http.IncomingMessage;
-
-    (req as any).wsHandled = false;
+    (req as any).wsHandlers = [];
 
     // let express check if there is a handler for this URL
     const res = new http.ServerResponse(req);
@@ -127,38 +99,22 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
 
 
     // if handler was found then accept socket and call handler with accepted socket again
-    if((req as any).wsHandled){
-      console.log("DO UPGRADE: "+req.url); // TODO REMOVE
+    const wsHandlers = (req as any).wsHandlers;
+    if(wsHandlers){
 
       wss.handleUpgrade(req, duplex, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
         wss.emit('connection', socket, request);
 
-        console.log("Call actual handler: "+req.url);
-        (reqCopy as any).ws = socket;
+        let i = -1;
+        function handleNext(){
+          if(++i < wsHandlers.length){
+            wsHandlers[i](socket, req, handleNext);
+          }
+        }
+        handleNext();
 
-        // trigger again express but this time ws functions get triggerd with Websocket
-        app._router.handle(reqCopy, res);
-
-        console.log("DONE: "+reqCopy.url);
       });
     }
-
-    /*const path = getPathFromUrl(req.url);
-    if (path) {
-      const middlewares = routes.get(path);
-      console.log(routes);
-      console.log("UPGRADE: "+path+" -> "+middlewares); // TODO REMOVE
-      if (!middlewares) return;
-      wss.handleUpgrade(req, duplex, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
-        wss.emit('connection', socket, request);
-
-        let i = 0;
-        const next = () => {
-          if (i < middlewares.length) middlewares[i++](socket, express.request, next);
-        };
-        next();
-      });
-    }*/
   });
 
   return appWs;
