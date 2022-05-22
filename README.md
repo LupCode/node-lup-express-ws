@@ -6,5 +6,58 @@
 # lup-express-ws
 Node module that provides WebSocket server functionality for express while being compatible with other websocket servers like webpack-hot-client or next.js
 
+## How to use
+### JavaScript
+```javascript
+const express = require('express');
+const wss = require('lup-express-ws')(express());
+const app = wss.app;
+
+app.ws("/", function(ws, req){
+    ws.on('message', function(event){
+        ws.send("Hello World");
+    });
+});
+
+
+// or with routers
+const router = express.Router();
+router.ws("/", function(ws, req){
+    ws.on('message', function(event){
+        ws.send("Hello World");
+    });
+});
+
+app.use(router);
+
+```
+
+### TypeScript
+```javascript
+import express from 'express';
+import expressWs from 'lup-express-ws';
+
+const wss = expressWs(express());
+const app = wss.app;
+
+app.ws("/", function(ws, req){
+    ws.on('message', function(event){
+        ws.send("Hello World");
+    });
+});
+
+
+// or with routers
+const router = express.Router() as expressWs.Router;
+router.ws("/", function(ws, req){
+    ws.on('message', function(event){
+        ws.send("Hello World");
+    });
+});
+
+```
+
 ## Credits
-This module is inspired by the [express-ws](https://github.com/HenningM/express-ws) module!
+This module is inspired by the [express-ws](https://github.com/HenningM/express-ws) module! 
+However since the [express-ws](https://github.com/HenningM/express-ws) isn't compatible with other websocket server modules, 
+this one got created. 
