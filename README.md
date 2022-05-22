@@ -33,15 +33,17 @@ app.use(router);
 ```
 
 ### TypeScript
+You additionally need to install `npm install --save-dev @types/ws`
 ```typescript
 import express from 'express';
 import expressWs from 'lup-express-ws';
+import { WebSocket } from 'ws';
 
 const wss = expressWs(express());
 const app = wss.app;
 
-app.ws("/", function(ws, req){
-    ws.on('message', function(event){
+app.ws("/", function(ws: WebSocket, req: express.Request){
+    ws.on('message', function(event: any){
         ws.send("Hello World");
     });
 });
@@ -49,8 +51,8 @@ app.ws("/", function(ws, req){
 
 // or with routers
 const router = express.Router() as expressWs.Router;
-router.ws("/", function(ws, req){
-    ws.on('message', function(event){
+router.ws("/", function(ws: Websocket, req: express.Request){
+    ws.on('message', function(event: any){
         ws.send("Hello World");
     });
 });
