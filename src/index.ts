@@ -100,7 +100,7 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
 
     // if handler was found then accept socket and call handler with accepted socket again
     const wsHandlers = (req as any).wsHandlers;
-    if(wsHandlers){
+    if(wsHandlers && wsHandlers.length > 0){
 
       wss.handleUpgrade(req, duplex, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
         wss.emit('connection', socket, request);
