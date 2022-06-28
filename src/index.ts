@@ -48,17 +48,21 @@ const toWebsocketPath = (url: string | undefined, includeQuery: boolean): string
   if (!url) return null;
   const idx = url.indexOf('?');
   const out = url.substring(0, idx < 0 ? url.length : idx);
-  return out+(out.endsWith("/") ? "" : "/")+".websocket"+((!includeQuery || idx < 0) ? "" : url.substring(idx));
+  return out + (out.endsWith('/') ? '' : '/') + '.websocket' + (!includeQuery || idx < 0 ? '' : url.substring(idx));
 };
 
 const addWsHandler = <T extends expressWs.RouterLike>(app: expressWs.Instance, target: T): void => {
   if (target.ws !== null && target.ws !== undefined) return;
-  
-  (target as any).ws = function addWsRoute(this, route: core.PathParams, ...middlewares: expressWs.WebsocketRequestHandler[]): T {
+
+  (target as any).ws = function addWsRoute(
+    this,
+    route: core.PathParams,
+    ...middlewares: expressWs.WebsocketRequestHandler[]
+  ): T {
     const specialGetUrl = toWebsocketPath(route.toString(), false);
 
     this.get(specialGetUrl, (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if((req as any).wsHandlers) middlewares.forEach((middleware) => (req as any).wsHandlers.push(middleware));
+      if ((req as any).wsHandlers) middlewares.forEach((middleware) => (req as any).wsHandlers.push(middleware));
       next();
     });
 
@@ -87,34 +91,34 @@ const expressWs = (app: express.Application, options: expressWs.Options = {}): e
     addWsHandler(appWs, express.Router as any);
   }
 
-
   // handle upgrades from simple HTTP request to Websocket
   server.on('upgrade', (req: http.IncomingMessage, duplex: internal.Duplex, head: Buffer) => {
-    req.url = toWebsocketPath(req.url, true) || req.url; // TODO add /.websocket at end (append query ? if set)
+    req.url = toWebsocketPath(req.url, true) || req.url;
     (req as any).wsHandlers = [];
 
     // let express check if there is a handler for this URL
     const res = new http.ServerResponse(req);
-    app._router.handle(req, res);
-
+    (app as any).handle(req, res); // next function (third argument) never gets called?
 
     // if handler was found then accept socket and call handler with accepted socket again
-    const wsHandlers = (req as any).wsHandlers;
-    if(wsHandlers && wsHandlers.length > 0){
+    setTimeout(() => {
+      // timeout needed because next function of handle(req, res, next) never gets called
+      const wsHandlers = (req as any).wsHandlers;
 
-      wss.handleUpgrade(req, duplex, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
-        wss.emit('connection', socket, request);
+      if (wsHandlers && wsHandlers.length > 0) {
+        wss.handleUpgrade(req, duplex, head, (socket: ws.WebSocket, request: http.IncomingMessage) => {
+          wss.emit('connection', socket, request);
 
-        let i = -1;
-        function handleNext(){
-          if(++i < wsHandlers.length){
-            wsHandlers[i](socket, req, handleNext);
+          let i = -1;
+          function handleNext() {
+            if (++i < wsHandlers.length) {
+              wsHandlers[i](socket, req, handleNext);
+            }
           }
-        }
-        handleNext();
-
-      });
-    }
+          handleNext();
+        });
+      }
+    });
   });
 
   return appWs;
